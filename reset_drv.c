@@ -20,6 +20,7 @@ MODULE_LICENSE("GPL");
 
 struct cdev cdev; 
 static dev_t devno;
+static int devno_major;
 static unsigned char key_val;  
 static volatile int ev_press = 0;
 struct class *cdev_class;
@@ -92,13 +93,18 @@ static int reset_cdev_init( void )
     printk("Initializing reset cdev!\n");
 
     /*动态申请设备号*/
-    err = alloc_chrdev_region(&devno, 0, 1, CDEV_NAME);
-    if(err<0)  
-    {
+	devno = MKDEV(devno_major, 0);
+	if(devno_major)
+		err = register_chrdev_region(devno, 1, CDEV_NAME);
+	else {
+    	err = alloc_chrdev_region(&devno, 0, 1, CDEV_NAME);
+		devno_major = MAJOR(devno);
+	}
+    if(err < 0) {
         printk("alloc_fail!\n");
         return err;
     }
-    printk("major=%d, minor=%d\n", MAJOR(devno), MINOR(devno)); 
+    printk("major=%d, minor=%d\n", devno_major, MINOR(devno)); 
     
     /*初始化cdev*/
     cdev_init(&cdev, &cdev_fops);
